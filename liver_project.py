@@ -46,7 +46,11 @@ def predict(test_data_dir, weights_path, out_seg_dir):
     for name, sample in zip(all_images, loader):
         output = load_model.model(Variable(sample['input']).cuda())
         output = output.data.cpu().numpy()
-        max_output = np.argmax(output, axis=1) * 127
+        max_output = np.around(np.argmax(output, axis=1) * 127.3)  # to get 127 for class 1 and 255 for classss 2
         seg = max_output.transpose((1, 2, 0))
-        cv2.imwrite(out_seg_dir + '\{}'.format(name), seg)
+        cv2.imwrite(os.path.join(out_seg_dir, name), seg)
+        print("saved {}".format(name))
     print('Done')
+
+
+predict('../ct/val', 'saved_models/Dec26_15-01_UNet_54_Adam_MultiClass_Dice_loss.pth.tar', 'output_seg')

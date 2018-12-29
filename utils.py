@@ -80,7 +80,7 @@ class model:
         :param filename: path to the checkpoint
         :return:
         """
-        self.model = getattr(UNet, self.model_name)(nConv=args)
+        self.model = getattr(UNet, self.model_name)(args)
 
         checkpoint = torch.load(filename)
 

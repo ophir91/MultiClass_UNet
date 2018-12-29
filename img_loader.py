@@ -9,13 +9,14 @@ from torch.utils.data import Dataset, DataLoader
 
 
 class UnetDataset(Dataset):
-    def __init__(self, images_dir, masks_dir, transform=None, input_size=512):
+    def __init__(self, images_dir, masks_dir=None, transform=None, input_size=512):
 
         self.transform = transform
         self.path2images = images_dir
         self.path2masks = masks_dir
         self.all_images = [x for x in sorted(os.listdir(images_dir)) if x[-4:] == '.png']  # Read all the images
-        self.all_masks = [x for x in sorted(os.listdir(masks_dir)) if x[-4:] == '.png']  # Read all the masks
+        if masks_dir is not None:
+            self.all_masks = [x for x in sorted(os.listdir(masks_dir)) if x[-4:] == '.png']  # Read all the masks
         self.input_size = input_size
 
     def __len__(self):
@@ -23,9 +24,11 @@ class UnetDataset(Dataset):
 
     def __getitem__(self, idx):
         id_image = self.all_images[idx]
-        id_mask = self.all_masks[idx]
         img = get_image(os.path.join(self.path2images, id_image), self.input_size)
-        mask = get_image(os.path.join(self.path2masks, id_mask), self.input_size)
+        mask = None
+        if self.path2masks is not None:
+            id_mask = self.all_masks[idx]
+            mask = get_image(os.path.join(self.path2masks, id_mask), self.input_size)
 
         sample = {'input': img,
                   'ground_truth': mask}
@@ -43,15 +46,17 @@ class ToTensor(object):
 
     def __call__(self, sample):
         img, mask = sample['input'], sample['ground_truth']
-
+        mask_cat = np.zeros((1))
         img = np.expand_dims(img, axis=2)
-        mask_cat = to_categorical(np.array(mask / 127, dtype=np.int), num_classes=3)
+        if mask is not None:
+            mask_cat = to_categorical(np.array(mask / 127, dtype=np.int), num_classes=3)
 
         # swap color axis because
         # numpy image: H x W x channels
         # torch image: channels x H X W
         img = normalize(img).transpose((2, 0, 1))
-        mask_cat = mask_cat.transpose((2, 0, 1))
+        if mask is not None:
+            mask_cat = mask_cat.transpose((2, 0, 1))
         return {'input': torch.from_numpy(img),
                 'ground_truth': torch.from_numpy(mask_cat)}
 
