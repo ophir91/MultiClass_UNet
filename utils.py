@@ -81,8 +81,10 @@ class model:
         :return:
         """
         self.model = getattr(UNet, self.model_name)(args)
-
-        checkpoint = torch.load(filename)
+        if torch.cuda.is_available():
+            checkpoint = torch.load(filename)
+        else:
+            checkpoint = torch.load(filename, map_location='cpu')
 
         self.model.load_state_dict(checkpoint['model_state_dict'])
 
